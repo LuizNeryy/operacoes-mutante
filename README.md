@@ -24,4 +24,3 @@ Sua missão é atuar como um engenheiro de qualidade para encontrar essas fraque
 5.  **Validação Final:**
     - Rode o Stryker novamente e verifique se sua pontuação de mutação aumentou, idealmente para mais de 95%.
 
-Siga as instruções do documento do trabalho para a entrega final. Boa sorte!

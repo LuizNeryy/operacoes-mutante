@@ -1,9 +1,8 @@
 # Relatório de Teste de Mutação - Análise de Eficácia de Testes
 
-**Disciplina:** [Seu Nome da Disciplina]  
+**Disciplina:** Testes de Software  
 **Trabalho:** Análise de Eficácia de Testes com Teste de Mutação  
-**Nome:** [Seu Nome Completo]  
-**Matrícula:** [Sua Matrícula]  
+**Nome:** Luiz Nery 
 **Data:** 02 de novembro de 2025
 
 ---

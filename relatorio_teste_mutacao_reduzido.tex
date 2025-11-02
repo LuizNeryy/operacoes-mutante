@@ -1,0 +1,271 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\geometry{margin=2cm}
+
+% Configuração de código
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegray},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breaklines=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan,
+}
+
+\begin{document}
+
+% Capa
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    {\LARGE\bfseries Universidade Federal [Sua Universidade]\par}
+    \vspace{0.3cm}
+    {\large Curso de [Seu Curso]\par}
+    \vspace{0.3cm}
+    {\large Disciplina: Qualidade de Software\par}
+    
+    \vspace{2cm}
+    
+    {\huge\bfseries Análise de Eficácia de Testes\\com Teste de Mutação\par}
+    
+    \vspace{0.8cm}
+    
+    {\Large Trabalho Prático - StrykerJS\par}
+    
+    \vspace{2cm}
+    
+    {\large
+    \textbf{Nome:} [Seu Nome Completo]\\
+    \textbf{Matrícula:} [Sua Matrícula]\\
+    }
+    
+    \vfill
+    
+    {\large 02 de novembro de 2025\par}
+\end{titlepage}
+
+\section{Análise Inicial}
+
+Este trabalho demonstra a diferença fundamental entre \textbf{cobertura de código} e \textbf{eficácia de testes} utilizando teste de mutação com StrykerJS. O teste de mutação introduz pequenas alterações (mutações) no código e verifica se os testes as detectam. Mutantes que ``sobrevivem'' indicam fraquezas na suíte de testes.
+
+\subsection{Cobertura de Código vs Mutation Score}
+
+A análise inicial revelou uma discrepância crítica entre as métricas tradicionais e a eficácia real:
+
+\begin{table}[H]
+\centering
+\small
+\caption{Comparação: Cobertura de Código vs Eficácia de Testes}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Métrica} & \textbf{Inicial} & \textbf{Final} & \textbf{Variação} \\
+\midrule
+Cobertura de Linhas & 98,64\% & 98,64\% & 0 \\
+Cobertura de Funções & 100\% & 100\% & 0 \\
+\textbf{Mutation Score} & \textbf{73,71\%} & \textbf{96,71\%} & \textcolor{green}{\textbf{+23,00 pp}} \\
+\midrule
+Mutantes Mortos & 154 & 203 & +49 \\
+Mutantes Sobreviventes & 56 & 7 & -49 \\
+Número de Testes & 50 & 99 & +49 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Observação Crítica:} Apesar de 100\% de cobertura de funções e 98,64\% de linhas, apenas 73,71\% dos mutantes foram detectados inicialmente. Isso prova que \textbf{alta cobertura não garante testes eficazes}.
+
+\section{Análise de Mutantes Críticos}
+
+Foram selecionados 3 mutantes sobreviventes que representam categorias importantes de falhas:
+
+\subsection{Mutante \#1: Comparadores de Limites}
+
+\textbf{Código Original:} \texttt{function isMaiorQue(a, b) \{ return a > b; \}}
+
+\textbf{Mutante Sobrevivente:} \texttt{a > b} $\rightarrow$ \texttt{a >= b}
+
+\textbf{Problema:} O teste original apenas verificava \texttt{isMaiorQue(10, 5)}, que retorna \texttt{true} tanto para \texttt{>} quanto \texttt{>=}. Faltava testar o caso crítico \texttt{a === b}.
+
+\textbf{Solução Implementada:}
+\begin{lstlisting}[language=JavaScript]
+test('deve retornar false quando numeros sao iguais', () => {
+    expect(isMaiorQue(5, 5)).toBe(false); // Mata o mutante!
+});
+\end{lstlisting}
+
+Este teste força a distinção entre \texttt{>} e \texttt{>=}, eliminando 6 mutantes relacionados a boundary conditions.
+
+\subsection{Mutante \#2: Função isPrimo}
+
+\textbf{Código Original:}
+\begin{lstlisting}[language=JavaScript]
+function isPrimo(n) {
+  if (n <= 1) return false;
+  for (let i = 2; i < n; i++) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+\end{lstlisting}
+
+\textbf{Mutantes Sobreviventes:} 8 mutantes, incluindo:
+\begin{itemize}
+    \item \texttt{n <= 1} $\rightarrow$ \texttt{n < 1}
+    \item \texttt{i < n} $\rightarrow$ \texttt{i >= n}
+    \item \texttt{n \% i} $\rightarrow$ \texttt{n * i}
+\end{itemize}
+
+\textbf{Problema:} O teste apenas verificava \texttt{isPrimo(7) === true}, não testando casos limites.
+
+\textbf{Solução:} Testes para todos os casos críticos:
+\begin{lstlisting}[language=JavaScript]
+expect(isPrimo(0)).toBe(false);  // Testa n <= 1
+expect(isPrimo(1)).toBe(false);  // Testa limite
+expect(isPrimo(2)).toBe(true);   // Menor primo
+expect(isPrimo(4)).toBe(false);  // Par nao-primo
+expect(isPrimo(9)).toBe(false);  // Impar composto
+\end{lstlisting}
+
+\textbf{Resultado:} 8 mutantes eliminados.
+
+\subsection{Mutante \#3: Conversão de Temperatura}
+
+\textbf{Código:} \texttt{celsiusParaFahrenheit(c) = (c * 9/5) + 32}
+
+\textbf{Mutantes:} \texttt{*} $\rightarrow$ \texttt{/}, \texttt{/5} $\rightarrow$ \texttt{*5}
+
+\textbf{Problema Crítico:} Testar apenas \texttt{celsiusParaFahrenheit(0)} não valida a fórmula, pois \texttt{0 * 9/5 = 0} e \texttt{0 / 9/5 = 0} produzem o mesmo resultado!
+
+\textbf{Solução:} Testar valores não-zero que validam toda a fórmula:
+\begin{lstlisting}[language=JavaScript]
+expect(celsiusParaFahrenheit(100)).toBe(212);  // Ebulicao
+expect(celsiusParaFahrenheit(-40)).toBe(-40);  // Ponto de igualdade
+expect(celsiusParaFahrenheit(37)).toBeCloseTo(98.6, 1); // Temperatura corporal
+\end{lstlisting}
+
+\textbf{Lição Aprendida:} Valores que anulam parte da lógica (como 0 em multiplicações) não validam adequadamente a correção da implementação.
+
+\section{Resultados Finais}
+
+\subsection{Evolução da Pontuação}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Evolução em Três Fases}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Fase} & \textbf{Mutation Score} & \textbf{Sobreviventes} & \textbf{Testes} \\
+\midrule
+Inicial & 73,71\% & 56 & 50 \\
+1ª Melhoria & 94,84\% & 11 & 92 \\
+\textbf{Final} & \textbf{96,71\%} & \textbf{7} & \textbf{99} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Impacto Prático}
+
+A melhoria de 73,71\% para 96,71\% representa:
+
+\begin{itemize}
+    \item \textbf{Antes:} Apenas 3 em cada 4 bugs seriam detectados
+    \item \textbf{Depois:} 97 em cada 100 bugs seriam detectados
+    \item \textbf{Redução de risco:} 87,5\% menos mutantes escapando
+\end{itemize}
+
+\textbf{Principais melhorias implementadas:}
+
+\begin{enumerate}
+    \item \textbf{Boundary conditions:} Testes para valores limites (\texttt{a === b}, arrays vazios, zero)
+    \item \textbf{Casos negativos:} Validação de quando funções devem retornar \texttt{false}
+    \item \textbf{Mensagens específicas:} \texttt{toThrow('mensagem exata')} em vez de \texttt{toThrow()}
+    \item \textbf{Múltiplos valores:} Fórmulas matemáticas testadas com valores diversos
+    \item \textbf{Ordenação e edge cases:} Arrays desordenados, valores negativos, casos especiais
+\end{enumerate}
+
+\subsection{Mutantes Remanescentes}
+
+Os 7 mutantes sobreviventes (3,3\% do total) são casos extremamente específicos de condições booleanas internas que exigiriam refatoração do código fonte. A pontuação de 96,71\% é considerada excelente para produção.
+
+\section{Conclusão}
+
+\subsection{Principais Aprendizados}
+
+\textbf{1. Cobertura ≠ Qualidade:} O projeto manteve 98,64\% de cobertura, mas a eficácia aumentou de 73,71\% para 96,71\%. Cobertura mede se o código foi \textit{executado}, teste de mutação mede se foi \textit{corretamente testado}.
+
+\textbf{2. Boundary Conditions são Críticos:} A maioria dos mutantes sobreviventes relacionava-se a casos limites: \texttt{>} vs \texttt{>=}, \texttt{n === 0} vs \texttt{n === 1}, arrays vazios. Testar apenas valores ``no meio'' deixa fronteiras vulneráveis.
+
+\textbf{3. Pensamento Crítico é Essencial:} Não basta escrever testes que ``passam''. É necessário questionar: este teste detectaria se o operador mudasse? Testei valores iguais? Testei resultados negativos?
+
+\textbf{4. Teste de Mutação Revela Fraquezas Ocultas:} Os 56 mutantes iniciais apontaram precisamente onde os testes eram fracos: falta de boundary conditions, ausência de casos negativos, validações superficiais.
+
+\subsection{Importância Prática}
+
+O teste de mutação é essencial para:
+
+\begin{itemize}
+    \item \textbf{Sistemas críticos:} Financeiros, médicos, infraestrutura
+    \item \textbf{Refatoração segura:} Alta mutation score permite refatorar com confiança
+    \item \textbf{Prevenção de regressões:} Detecta bugs sutis antes da produção
+    \item \textbf{Cultura de qualidade:} Eleva o padrão de escrita de testes
+\end{itemize}
+
+\subsection{Reflexão Final}
+
+\begin{quote}
+\textit{``Cobertura de código mede se o código foi executado. Teste de mutação mede se o código foi corretamente testado. A diferença é fundamental.''}
+\end{quote}
+
+Este trabalho transformou a compreensão sobre qualidade de testes. A melhoria de 73,71\% para 96,71\% representa não apenas números, mas uma mudança de mentalidade: de ``testes que passam'' para ``testes que realmente protegem o código''.
+
+Para projetos onde qualidade é crítica, o teste de mutação não é opcional --- \textbf{é essencial}.
+
+\subsection{Recomendações}
+
+\begin{enumerate}
+    \item Integrar teste de mutação no CI/CD
+    \item Estabelecer threshold mínimo (ex: 95\%)
+    \item Focar em código crítico (otimização de tempo)
+    \item Treinar equipe em boundary testing
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\noindent\textbf{Repositório:} \url{https://github.com/LuizNeryy/operacoes-mutante}
+
+\noindent\textbf{Referências:}
+\begin{enumerate}
+    \item StrykerJS Documentation: \url{https://stryker-mutator.io/docs/}
+    \item Jia, Y., \& Harman, M. (2011). An analysis and survey of mutation testing. IEEE TSE, 37(5), 649-678.
+\end{enumerate}
+
+\end{document}
